@@ -62,12 +62,10 @@ with st.expander("System Prompt (Optional)"):
         help="Enter pre-chat instructions for the model here.",
     )
 
-    def _submit_btn():
-        update_system(system_prompt)
-
     submit_system = st.button(
         "Set System Prompt",
-        on_click=_submit_btn,
+        on_click=update_system,
+        args=(system_prompt,),
     )
 
 # DEBUG
