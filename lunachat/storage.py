@@ -7,14 +7,22 @@ conn = st.connection("s3", protocol="s3", type=FilesConnection)
 system_prompts_file = "lunaskye-lunachat/system_prompts.json"
 
 
-def save(path: str, data: dict) -> bool:
+def save(path: str, data: dict) -> None:
     with conn.open(path, "wt") as f:
         json.dump(data, f)
+
+
+def save_system_prompts(data: dict) -> None:
+    save(system_prompts_file, data)
 
 
 def load(path: str) -> dict:
     json_data = conn.read(path, input_format="text")
     return json.loads(json_data)
+
+
+def load_system_prompts() -> dict:
+    return load(system_prompts_file)
 
 
 # Verify file
