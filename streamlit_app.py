@@ -122,7 +122,7 @@ def generate_chat_responses(chat_completion) -> Generator[str, None, None]:
 if prompt := st.chat_input("Enter your prompt here..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with st.chat_message("user", avatar="👨‍💻"):
+    with st.chat_message("user", avatar="👩🏻‍💻"):
         st.markdown(prompt)
 
     # Fetch response from Groq API
