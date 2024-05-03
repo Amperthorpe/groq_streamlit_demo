@@ -2,6 +2,11 @@ import streamlit as st
 from typing import Generator
 from groq import Groq
 
+default_system = "You are a helpful assistant."
+client = Groq(
+    api_key=st.secrets["GROQ_API_KEY"],
+)
+
 st.set_page_config(page_icon="🌙", layout="wide", page_title="LunaChat")
 
 
@@ -16,20 +21,6 @@ def icon(emoji: str):
 icon("🌙")
 
 st.subheader("LunaChat", divider="rainbow", anchor=False)
-default_system = "You are a helpful assistant."
-client = Groq(
-    api_key=st.secrets["GROQ_API_KEY"],
-)
-
-# Initialize state variables
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if "selected_model" not in st.session_state:
-    st.session_state.selected_model = None
-
-if "system_prompt" not in st.session_state:
-    st.session_state.system_prompt = None
 
 
 # Functions
@@ -42,8 +33,14 @@ def update_system(system: str):
             st.session_state.messages[0] = system_dict
         else:
             st.session_state.messages.insert(0, system_dict)
-    print(st.session_state.messages)
 
+
+# Initialize state variables
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = None
 
 # Define model details
 models = {
@@ -66,9 +63,7 @@ with st.expander("System Prompt (Optional)"):
     )
 
     def _submit_btn():
-        print("btn")
         update_system(system_prompt)
-        st.session_state.system_prompt = system_prompt
 
     submit_system = st.button(
         "Set System Prompt",
@@ -76,7 +71,7 @@ with st.expander("System Prompt (Optional)"):
     )
 
 # DEBUG
-# st.write(st.session_state.messages)
+st.write(st.session_state.messages)
 # Layout for model selection and max_tokens slider
 col1, col2 = st.columns([10, 1])
 
