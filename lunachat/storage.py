@@ -5,6 +5,7 @@ from st_files_connection import FilesConnection
 conn = st.connection("s3", protocol="s3", type=FilesConnection)
 
 system_prompts_file = "lunaskye-lunachat/system_prompts.json"
+saved_chats_folder = "lunaskye-lunachat/saved_chats/"
 
 
 def save(path: str, data: dict) -> None:
