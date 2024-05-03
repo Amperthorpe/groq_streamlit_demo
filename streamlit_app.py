@@ -69,7 +69,9 @@ with st.expander("System Prompt (Optional)"):
     )
 
 # DEBUG
-st.write(st.session_state.messages)
+with st.popover("DEBUG"):
+    st.write(st.session_state.messages)
+
 # Layout for model selection and max_tokens slider
 col1, col2 = st.columns([10, 1])
 
