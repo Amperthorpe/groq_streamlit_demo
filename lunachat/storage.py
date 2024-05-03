@@ -10,7 +10,8 @@ saved_chats_folder = "lunaskye-lunachat/saved_chats/"
 
 def save(path: str, data: dict) -> None:
     with conn.open(path, "wt") as f:
-        json.dump(data, f)
+        json_data = json.dumps(data)
+        f.write(json_data)
 
 
 def save_system_prompts(data: dict) -> None:
@@ -19,6 +20,7 @@ def save_system_prompts(data: dict) -> None:
 
 def load(path: str) -> dict:
     json_data = conn.read(path, input_format="text")
+    print(f"load: {json_data} of type {type(json_data)}")
     return json.loads(json_data)
 
 
@@ -27,7 +29,7 @@ def load_system_prompts() -> dict:
 
 
 # Verify file
-default_json_data = json.dumps({"default": "You are a helpful assistant."})
+default_json_data = {"default": "You are a helpful assistant."}
 try:
     file_data = conn.read(system_prompts_file, input_format="text")
     if not file_data:
@@ -39,4 +41,5 @@ except FileNotFoundError:
 
 if __name__ == "__main__":
     data = load(system_prompts_file)
+    print(type(data))
     print(data)
