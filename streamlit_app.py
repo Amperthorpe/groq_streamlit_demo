@@ -2,8 +2,7 @@ import streamlit as st
 from typing import Generator
 from groq import Groq
 
-st.set_page_config(page_icon="💬", layout="wide",
-                   page_title="Groq Goes Brrrrrrrr...")
+st.set_page_config(page_icon="🌙", layout="wide", page_title="LunaChat")
 
 
 def icon(emoji: str):
@@ -14,63 +13,106 @@ def icon(emoji: str):
     )
 
 
-icon("🏎️")
+icon("🌙")
 
-st.subheader("Groq Chat Streamlit App", divider="rainbow", anchor=False)
-
+st.subheader("LunaChat", divider="rainbow", anchor=False)
+default_system = "You are a helpful assistant."
 client = Groq(
     api_key=st.secrets["GROQ_API_KEY"],
 )
 
-# Initialize chat history and selected model
+# Initialize state variables
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = None
 
+if "system_prompt" not in st.session_state:
+    st.session_state.system_prompt = None
+
+
+# Functions
+def update_system(system: str):
+    system_dict = {"role": "system", "content": system}
+    if len(st.session_state.messages) == 0:
+        st.session_state.messages.append(system_dict)
+    else:
+        if st.session_state.messages[0]["role"] == "system":
+            st.session_state.messages[0] = system_dict
+        else:
+            st.session_state.messages.insert(0, system_dict)
+    print(st.session_state.messages)
+
+
 # Define model details
 models = {
-    "gemma-7b-it": {"name": "Gemma-7b-it", "tokens": 8192, "developer": "Google"},
-    "llama2-70b-4096": {"name": "LLaMA2-70b-chat", "tokens": 4096, "developer": "Meta"},
+    # "gemma-7b-it": {"name": "Gemma-7b-it", "tokens": 8192, "developer": "Google"},
     "llama3-70b-8192": {"name": "LLaMA3-70b-8192", "tokens": 8192, "developer": "Meta"},
     "llama3-8b-8192": {"name": "LLaMA3-8b-8192", "tokens": 8192, "developer": "Meta"},
-    "mixtral-8x7b-32768": {"name": "Mixtral-8x7b-Instruct-v0.1", "tokens": 32768, "developer": "Mistral"},
+    "mixtral-8x7b-32768": {
+        "name": "Mixtral-8x7b-Instruct-v0.1",
+        "tokens": 32768,
+        "developer": "Mistral",
+    },
 }
 
+with st.expander("System Prompt (Optional)"):
+    system_prompt = st.text_area(
+        "System Prompt",
+        placeholder=default_system,
+        label_visibility="hidden",
+        help="Enter pre-chat instructions for the model here.",
+    )
+
+    def _submit_btn():
+        print("btn")
+        update_system(system_prompt)
+        st.session_state.system_prompt = system_prompt
+
+    submit_system = st.button(
+        "Set System Prompt",
+        on_click=_submit_btn,
+    )
+
+# DEBUG
+# st.write(st.session_state.messages)
 # Layout for model selection and max_tokens slider
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([10, 1])
 
 with col1:
     model_option = st.selectbox(
         "Choose a model:",
         options=list(models.keys()),
         format_func=lambda x: models[x]["name"],
-        index=4  # Default to mixtral
+        index=0,  # Default to llama3 70b
     )
 
 # Detect model change and clear chat history if model has changed
 if st.session_state.selected_model != model_option:
     st.session_state.messages = []
+    update_system(system_prompt)
     st.session_state.selected_model = model_option
 
 max_tokens_range = models[model_option]["tokens"]
 
 with col2:
-    # Adjust max_tokens slider dynamically based on the selected model
-    max_tokens = st.slider(
-        "Max Tokens:",
-        min_value=512,  # Minimum value to allow some flexibility
+    # Adjust max_tokens input dynamically based on the selected model
+    max_tokens = st.number_input(
+        "Max Tokens",
+        min_value=1,
         max_value=max_tokens_range,
-        # Default value or max allowed if less
         value=min(32768, max_tokens_range),
-        step=512,
-        help=f"Adjust the maximum number of tokens (words) for the model's response. Max for selected model: {max_tokens_range}"
+        step=1024,
+        help=f"Adjust the maximum number of tokens (words) for the model's response. Max for selected model: {max_tokens_range}",
     )
+
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
-    avatar = '🤖' if message["role"] == "assistant" else '👨‍💻'
+    if message["role"] == "system":
+        continue
+    avatar = "🤖" if message["role"] == "assistant" else "👨‍💻"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
@@ -85,7 +127,7 @@ def generate_chat_responses(chat_completion) -> Generator[str, None, None]:
 if prompt := st.chat_input("Enter your prompt here..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with st.chat_message("user", avatar='👨‍💻'):
+    with st.chat_message("user", avatar="👨‍💻"):
         st.markdown(prompt)
 
     # Fetch response from Groq API
@@ -93,14 +135,11 @@ if prompt := st.chat_input("Enter your prompt here..."):
         chat_completion = client.chat.completions.create(
             model=model_option,
             messages=[
-                {
-                    "role": m["role"],
-                    "content": m["content"]
-                }
+                {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
             ],
             max_tokens=max_tokens,
-            stream=True
+            stream=True,
         )
 
         # Use the generator function with st.write_stream
@@ -113,9 +152,11 @@ if prompt := st.chat_input("Enter your prompt here..."):
     # Append the full response to session_state.messages
     if isinstance(full_response, str):
         st.session_state.messages.append(
-            {"role": "assistant", "content": full_response})
+            {"role": "assistant", "content": full_response}
+        )
     else:
         # Handle the case where full_response is not a string
         combined_response = "\n".join(str(item) for item in full_response)
         st.session_state.messages.append(
-            {"role": "assistant", "content": combined_response})
+            {"role": "assistant", "content": combined_response}
+        )
