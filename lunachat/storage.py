@@ -20,7 +20,6 @@ def save_system_prompts(data: dict) -> None:
 
 def load(path: str) -> dict:
     json_data = conn.read(path, input_format="text")
-    print(f"load: {json_data} of type {type(json_data)}")
     return json.loads(json_data)
 
 

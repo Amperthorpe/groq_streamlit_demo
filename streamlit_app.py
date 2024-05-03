@@ -2,12 +2,13 @@ import streamlit as st
 from typing import Generator
 from groq import Groq
 
-default_system = "You are a helpful assistant."
+st.set_page_config(page_icon="🌙", layout="wide", page_title="LunaChat")
+from lunachat.storage import save_system_prompts, load_system_prompts
+
+
 client = Groq(
     api_key=st.secrets["GROQ_API_KEY"],
 )
-
-st.set_page_config(page_icon="🌙", layout="wide", page_title="LunaChat")
 
 
 def icon(emoji: str):
@@ -24,8 +25,8 @@ st.subheader("LunaChat", divider="rainbow", anchor=False)
 
 
 # Functions
-def update_system(system: str):
-    system_dict = {"role": "system", "content": system}
+def update_system():
+    system_dict = {"role": "system", "content": st.session_state.system_input}
     if len(st.session_state.messages) == 0:
         st.session_state.messages.append(system_dict)
     else:
@@ -35,12 +36,24 @@ def update_system(system: str):
             st.session_state.messages.insert(0, system_dict)
 
 
+def reset_messages():
+    st.session_state.messages = []
+
+
 # Initialize state variables
+if "system_prompt_dict" not in st.session_state:
+    st.session_state.system_prompt_dict = (
+        load_system_prompts()
+    )  # Load dict from file storage to only read data when needed.
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = None
+
+if "system_input" not in st.session_state:
+    st.session_state.system_input = st.session_state.system_prompt_dict["default"]
 
 # Define model details
 models = {
@@ -55,17 +68,16 @@ models = {
 }
 
 with st.expander("System Prompt (Optional)"):
-    system_prompt = st.text_area(
+    st.text_area(
         "System Prompt",
-        placeholder=default_system,
         label_visibility="hidden",
         help="Enter pre-chat instructions for the model here.",
+        key="system_input",
     )
 
     submit_system = st.button(
         "Set System Prompt",
         on_click=update_system,
-        args=(system_prompt,),
     )
 
 # DEBUG
@@ -86,7 +98,7 @@ with col1:
 # Detect model change and clear chat history if model has changed
 if st.session_state.selected_model != model_option:
     st.session_state.messages = []
-    update_system(system_prompt)
+    update_system()
     st.session_state.selected_model = model_option
 
 max_tokens_range = models[model_option]["tokens"]
@@ -107,7 +119,7 @@ with col2:
 for message in st.session_state.messages:
     if message["role"] == "system":
         continue
-    avatar = "🤖" if message["role"] == "assistant" else "👨‍💻"
+    avatar = "🤖" if message["role"] == "assistant" else "👩‍💻"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
@@ -122,7 +134,7 @@ def generate_chat_responses(chat_completion) -> Generator[str, None, None]:
 if prompt := st.chat_input("Enter your prompt here..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with st.chat_message("user", avatar="👩🏻‍💻"):
+    with st.chat_message("user", avatar="👩‍💻"):
         st.markdown(prompt)
 
     # Fetch response from Groq API
